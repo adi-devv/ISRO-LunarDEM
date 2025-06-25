@@ -111,6 +111,7 @@ def generate_dem(image_path, sun_azimuth_deg, sun_elevation_deg, out_path='outpu
     grayscale = shadow_weight * (1 - shading) + (1 - shadow_weight) * DEM_norm
     grayscale = np.clip(grayscale, 0, 1)
 
+
     # Save grayscale image
     DEM_grayscale = (grayscale * 255).astype(np.uint8)
     cv2.imwrite(out_grayscale_path, DEM_grayscale)
