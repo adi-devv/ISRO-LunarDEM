@@ -4,7 +4,20 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="1c460619-1860-4f87-8fba-75ec60b0055c" name="Changes" comment="sunlight was inverted" />
+    <list default="true" id="1c460619-1860-4f87-8fba-75ec60b0055c" name="Changes" comment="sunlight was inverted">
+      <change afterPath="$PROJECT_DIR$/data/params.lbr" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/data/params.oat" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/data/params.oath" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/data/sun_params.spm" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/first_dem.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/first_grayscale_dem.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/main.py" beforeDir="false" afterPath="$PROJECT_DIR$/main.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/moonframe.png" beforeDir="false" afterPath="$PROJECT_DIR$/data/moonframe.png" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/second_dem.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/second_grayscale_dem.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/sun_params.spm" beforeDir="false" />
+    </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
     <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
@@ -29,16 +42,20 @@
     <option name="hideEmptyMiddlePackages" value="true" />
     <option name="showLibraryContents" value="true" />
   </component>
-  <component name="PropertiesComponent">{
-  &quot;keyToString&quot;: {
-    &quot;Python.main.executor&quot;: &quot;Run&quot;,
-    &quot;RunOnceActivity.ShowReadmeOnStart&quot;: &quot;true&quot;,
-    &quot;last_opened_file_path&quot;: &quot;D:/Aadit/ML/ISRO-LunarDEM&quot;
+  <component name="PropertiesComponent"><![CDATA[{
+  "keyToString": {
+    "Python.main.executor": "Run",
+    "Python.main2.executor": "Run",
+    "RunOnceActivity.ShowReadmeOnStart": "true",
+    "last_opened_file_path": "D:/Aadit/ML/Flickd"
   }
-}</component>
+}]]></component>
   <component name="RecentsManager">
     <key name="CopyFile.RECENT_KEYS">
       <recent name="D:\Aadit\ML\ISRO-LunarDEM" />
+    </key>
+    <key name="MoveFile.RECENT_KEYS">
+      <recent name="D:\Aadit\ML\ISRO-LunarDEM\data" />
     </key>
   </component>
   <component name="SharedIndexes">
@@ -65,7 +82,15 @@
       <option name="project" value="LOCAL" />
       <updated>1750872766433</updated>
     </task>
-    <option name="localTasksCounter" value="2" />
+    <task id="LOCAL-00002" summary="sunlight was inverted">
+      <option name="closed" value="true" />
+      <created>1750873224680</created>
+      <option name="number" value="00002" />
+      <option name="presentableId" value="LOCAL-00002" />
+      <option name="project" value="LOCAL" />
+      <updated>1750873224680</updated>
+    </task>
+    <option name="localTasksCounter" value="3" />
     <servers />
   </component>
   <component name="VcsManagerConfiguration">
