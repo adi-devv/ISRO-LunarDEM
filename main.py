@@ -29,13 +29,47 @@ def extract_sun_params(file_path):
     raise ValueError("Sun parameters not found or could not be parsed from the file.")
 
 
-def load_preprocess_image(img_path):
-    """Load image and apply Gaussian blur."""
+def load_preprocess_image(img_path, threshold=0.7, kernel_size=3):
+    """Load image, apply Gaussian blur, and invert excessively bright pixels based on neighbors."""
     img = cv2.imread(img_path, cv2.IMREAD_GRAYSCALE)
     if img is None:
         raise FileNotFoundError(f"Could not load image: {img_path}")
+
+    # Apply Gaussian blur
     img = cv2.GaussianBlur(img, (5, 5), 0)
-    return img.astype(np.float32) / 255.0  # Normalize to [0, 1]
+
+    # Normalize to [0, 1]
+    img = img.astype(np.float32) / 255.0
+
+    # Create a kernel for neighborhood analysis
+    kernel = np.ones((kernel_size, kernel_size), dtype=np.float32) / (kernel_size * kernel_size)
+
+    # Pad the image to handle borders
+    padded_img = np.pad(img, ((kernel_size // 2, kernel_size // 2), (kernel_size // 2, kernel_size // 2)),
+                        mode='reflect')
+
+    # Output image
+    output = img.copy()
+
+    # Iterate over each pixel
+    for i in range(img.shape[0]):
+        for j in range(img.shape[1]):
+            if img[i, j] > threshold:  # Check if pixel is excessively bright
+                # Extract neighborhood
+                neighborhood = padded_img[i:i + kernel_size, j:j + kernel_size]
+                mean_neighbor = np.mean(neighborhood)
+
+                # Invert intensity based on its own value
+                inverted_value = 1.0 - img[i, j]
+
+                # If surrounding pixels are also bright (mean > threshold), darken the main pixel further
+                if mean_neighbor > threshold:
+                    adjustment = (mean_neighbor - threshold) * 0.5  # Scale factor to darken
+                    inverted_value = max(0.0, inverted_value - adjustment)
+
+                output[i, j] = inverted_value
+
+    return output
 
 
 def generate_dem(image, sun_azimuth_deg, sun_elevation_deg):
@@ -85,12 +119,12 @@ def save_dem(dem, output_dir='output'):
 
     # Define a strong elevation color gradient (dark green → lime → yellow → gold → orange → purple)
     colors = [
-        (0.0, '#004d00'),   # very dark green (lowest)
-        (0.2, '#66cc00'),   # lime
-        (0.4, '#ffff00'),   # yellow
-        (0.6, '#ff9900'),   # gold/orange
-        (0.8, '#ff3300'),   # orange-red
-        (1.0, '#800080')    # purple (highest)
+        (0.0, '#004d00'),  # very dark green (lowest)
+        (0.2, '#66cc00'),  # lime
+        (0.4, '#ffff00'),  # yellow
+        (0.6, '#ff9900'),  # gold/orange
+        (0.8, '#ff3300'),  # orange-red
+        (1.0, '#800080')  # purple (highest)
     ]
     cmap = LinearSegmentedColormap.from_list("elevation_colormap", colors)
 
@@ -101,18 +135,19 @@ def save_dem(dem, output_dir='output'):
     print(f"✅ Saved grayscale DEM: {grayscale_path}")
     print(f"🌄 Saved color elevation DEM: {colormap_path}")
 
+
 def main():
     # File paths
     img_path = "data/moonframe.png"
     spm_path = "data/sun_params.spm"
-    output_dir = "output"
+    output_dir = "output_p0"
 
     # Step 1: Get sun direction
     sun_azimuth, sun_elevation = extract_sun_params(spm_path)
     print(f"☀️ Sun Azimuth: {sun_azimuth:.2f}°, Elevation: {sun_elevation:.2f}°")
 
-    # Step 2: Load and preprocess image
-    image = load_preprocess_image(img_path)
+    # Step 2: Load and preprocess image with selective bright pixel inversion
+    image = load_preprocess_image(img_path, threshold=0.7, kernel_size=3)
 
     # Step 3: Generate DEM
     dem = generate_dem(image, sun_azimuth, sun_elevation)
