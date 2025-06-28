@@ -482,7 +482,7 @@ class EnhancedLunarDEMConverter:
         Create comprehensive visualization with additional analysis plots and save all figures.
         """
         # Create output directory if it doesn't exist
-        output_dir = self.data_dir / "output"
+        output_dir = "output"
         output_dir.mkdir(exist_ok=True)
 
         # Dictionary to store all figures and their filenames
