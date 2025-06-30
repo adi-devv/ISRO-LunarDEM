@@ -4,8 +4,10 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="1c460619-1860-4f87-8fba-75ec60b0055c" name="Changes" comment="advanced imagery">
+    <list default="true" id="1c460619-1860-4f87-8fba-75ec60b0055c" name="Changes" comment="USING GPU">
+      <change afterPath="$PROJECT_DIR$/main_p01.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/main.py" beforeDir="false" afterPath="$PROJECT_DIR$/main.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -33,10 +35,11 @@
   </component>
   <component name="PropertiesComponent">{
   &quot;keyToString&quot;: {
+    &quot;Python.avg.executor&quot;: &quot;Run&quot;,
     &quot;Python.main.executor&quot;: &quot;Run&quot;,
     &quot;Python.main2.executor&quot;: &quot;Run&quot;,
     &quot;RunOnceActivity.ShowReadmeOnStart&quot;: &quot;true&quot;,
-    &quot;last_opened_file_path&quot;: &quot;D:/Aadit/ML/Flickd&quot;
+    &quot;last_opened_file_path&quot;: &quot;D:/Aadit/ML/ISRO-LunarDEM&quot;
   }
 }</component>
   <component name="RecentsManager">
@@ -44,6 +47,7 @@
       <recent name="D:\Aadit\ML\ISRO-LunarDEM" />
     </key>
     <key name="MoveFile.RECENT_KEYS">
+      <recent name="D:\Aadit\ML\ISRO-LunarDEM" />
       <recent name="D:\Aadit\ML\ISRO-LunarDEM\data" />
     </key>
   </component>
@@ -103,7 +107,31 @@
       <option name="project" value="LOCAL" />
       <updated>1751081375008</updated>
     </task>
-    <option name="localTasksCounter" value="6" />
+    <task id="LOCAL-00006" summary="advanced imagery">
+      <option name="closed" value="true" />
+      <created>1751082454012</created>
+      <option name="number" value="00006" />
+      <option name="presentableId" value="LOCAL-00006" />
+      <option name="project" value="LOCAL" />
+      <updated>1751082454012</updated>
+    </task>
+    <task id="LOCAL-00007" summary="advanced imagery">
+      <option name="closed" value="true" />
+      <created>1751082467227</created>
+      <option name="number" value="00007" />
+      <option name="presentableId" value="LOCAL-00007" />
+      <option name="project" value="LOCAL" />
+      <updated>1751082467227</updated>
+    </task>
+    <task id="LOCAL-00008" summary="USING GPU">
+      <option name="closed" value="true" />
+      <created>1751111139419</created>
+      <option name="number" value="00008" />
+      <option name="presentableId" value="LOCAL-00008" />
+      <option name="project" value="LOCAL" />
+      <updated>1751111139419</updated>
+    </task>
+    <option name="localTasksCounter" value="9" />
     <servers />
   </component>
   <component name="VcsManagerConfiguration">
@@ -111,6 +139,7 @@
     <MESSAGE value="grained grayscale" />
     <MESSAGE value="balanced dem" />
     <MESSAGE value="advanced imagery" />
-    <option name="LAST_COMMIT_MESSAGE" value="advanced imagery" />
+    <MESSAGE value="USING GPU" />
+    <option name="LAST_COMMIT_MESSAGE" value="USING GPU" />
   </component>
 </project>
