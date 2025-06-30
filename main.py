@@ -2,7 +2,9 @@ import numpy as np
 from PIL import Image
 import matplotlib.pyplot as plt
 from datetime import datetime, timedelta
-from scipy.ndimage import gaussian_filter, gradient
+from scipy.ndimage import gaussian_filter  # Keep gaussian_filter as it's from ndimage
+# Removed `gradient` from here as it caused the error
+import os  # Import os for path joining
 
 # Although you don't have standard SPICE kernels, spiceypy is still useful
 # for quaternion operations and vector math if we use them manually.
@@ -10,14 +12,15 @@ from scipy.ndimage import gaussian_filter, gradient
 # import spiceypy as spice
 
 # --- 1. Configuration and File Paths ---
-DATA_DIR = 'data/' # Directory containing all parameter files
-IMAGE_PATH = 'moonframe.png'
+DATA_DIR = 'data/'  # Directory containing all parameter files
 
 # Corrected paths to reflect they are in the 'data/' directory
+IMAGE_PATH = os.path.join(DATA_DIR,'moonframe.png')
 OATH_PATH = os.path.join(DATA_DIR, 'oath')
-OAT_PATH = os.path.join(DATA_DIR, 'params.oat') # Corrected: params.oat
+OAT_PATH = os.path.join(DATA_DIR, 'params.oat')  # Corrected: params.oat
 LBR_PATH = os.path.join(DATA_DIR, 'lbr')
 SPM_PATH = os.path.join(DATA_DIR, 'sun_params.spm')
+
 # --- 2. Load Moon Image ---
 try:
     img = Image.open(IMAGE_PATH).convert('L')  # Convert to grayscale
@@ -53,128 +56,185 @@ def parse_utc_time(parts, start_idx):
 def parse_oath_header(filepath):
     """Parses the OATH header file."""
     header = {}
-    with open(filepath, 'r') as f:
-        first_line = f.readline().strip()
-        parts = first_line.split()
+    try:
+        with open(filepath, 'r') as f:
+            first_line = f.readline().strip()
+            parts = first_line.split()
 
-        # Based on the format description
-        header['record_type'] = parts[0]
-        header['project_name'] = " ".join(parts[1:4])  # "CHANDRAYAAN-2 MISSION"
-        header['block_length_bytes'] = int(parts[4])
-        header['station_id'] = parts[5]
+            # Based on the format description
+            header['record_type'] = parts[0]
+            # Joining parts 1-3 for project name as it's "CHANDRAYAAN-2 MISSION"
+            header['project_name'] = " ".join(parts[1:4])
+            header['block_length_bytes'] = int(parts[4])
+            header['station_id'] = parts[5]
 
-        # Start UTC time for First OAT block (7I4)
-        header['start_utc'] = parse_utc_time(parts, 6)
+            # Start UTC time for First OAT block (7I4)
+            header['start_utc'] = parse_utc_time(parts, 6)
 
-        # End UTC time for Last OAT block (7I4)
-        header['end_utc'] = parse_utc_time(parts, 13)
+            # End UTC time for Last OAT block (7I4)
+            header['end_utc'] = parse_utc_time(parts, 13)
 
-        header['num_oat_records'] = int(parts[20])  # Adjusted index based on example line
-        header['record_length_oat'] = int(parts[21])  # Adjusted index
-        header['attitude_source'] = int(parts[22])  # Adjusted index
-        header['mission_phase'] = int(parts[23])  # Adjusted index (1-Earth, 3-Moon)
+            header['num_oat_records'] = int(parts[20])  # Adjusted index based on example line
+            header['record_length_oat'] = int(parts[21])  # Adjusted index
+            header['attitude_source'] = int(parts[22])  # Adjusted index
+            header['mission_phase'] = int(parts[23])  # Adjusted index (1-Earth, 3-Moon)
 
-    print(
-        f"OATH Header: Project='{header['project_name']}', Mission Phase='{header['mission_phase']}' (1=Earth, 3=Moon)")
-    return header
+        print(
+            f"OATH Header: Project='{header['project_name']}', Mission Phase='{header['mission_phase']}' (1=Earth, 3=Moon)")
+        return header
+    except FileNotFoundError:
+        print(f"Error: OATH file not found at {filepath}")
+        return None
+    except Exception as e:
+        print(f"Error parsing OATH file {filepath}: {e}")
+        return None
 
 
 def parse_oat_file(filepath):
     """Parses the OAT data file."""
     data_records = []
-    with open(filepath, 'r') as f:
-        for line in f:
-            if line.startswith('ORBTATTD'):
-                parts = line.split()
-                try:
-                    record = {}
-                    record['record_type'] = parts[0]
-                    record['physical_record_num'] = int(parts[1])
-                    record['block_length_bytes'] = int(parts[2])
+    try:
+        with open(filepath, 'r') as f:
+            for line in f:
+                if line.startswith('ORBTATTD'):
+                    parts = line.split()
+                    try:
+                        record = {}
+                        record['record_type'] = parts[0]
+                        record['physical_record_num'] = int(parts[1])
+                        record['block_length_bytes'] = int(parts[2])
 
-                    record['utc_time'] = parse_utc_time(parts, 3)  # Start at index 3 for 7I4
+                        record['utc_time'] = parse_utc_time(parts, 3)  # Start at index 3 for 7I4
 
-                    # Positions and Velocities (F20.6 and F12.6, 3 each)
-                    record['lunar_pos_xyz_j2000_earth_kms'] = np.array(
-                        [float(parts[10]), float(parts[11]), float(parts[12])])  # Adjusted for space sep.
-                    record['satellite_pos_xyz_j2000_kms'] = np.array(
-                        [float(parts[13]), float(parts[14]), float(parts[15])])
-                    record['satellite_vel_xyz_kms_sec'] = np.array(
-                        [float(parts[16]), float(parts[17]), float(parts[18])])
+                        # Indices need to be checked carefully based on the exact splitting behavior
+                        # from the provided example `oat` content:
+                        # ORBTATTD     1 6282023  10  30  23  58  21  26       161985.314143 ...
+                        # parts[0] = ORBTATTD
+                        # parts[1] = 1 (record number)
+                        # parts[2] = 628 (block length)
+                        # parts[3] to parts[9] = YYYY MM DD HH MM SS SSS
+                        # parts[10] = Lunar Position X
+                        # parts[11] = Lunar Position Y
+                        # parts[12] = Lunar Position Z
+                        # parts[13] = Satellite Position X
+                        # parts[14] = Satellite Position Y
+                        # parts[15] = Satellite Position Z
+                        # parts[16] = Satellite velocity X-dot
+                        # parts[17] = Satellite velocity Y-dot
+                        # parts[18] = Satellite velocity Z-dot
+                        # parts[19] to parts[22] = S/C Attitude Q1, Q2, Q3, Q4 (Inertial to Body)
+                        # parts[23] to parts[26] = Transformation Quaternion for Earth Fixed IAU frame
+                        # parts[27] to parts[30] = Transformation Quaternion for Lunar Fixed IAU frame
+                        # parts[31] = Latitude of sub-satellite point
+                        # parts[32] = Longitude of sub-satellite point
+                        # parts[33] = Solar Azimuth
+                        # parts[34] = Solar Elevation
+                        # parts[35] = Latitude
+                        # parts[36] = Longitude
+                        # parts[37] = Satellite altitude (kms)
+                        # parts[38] = Angle between +Roll and Velocity Vector
+                        # parts[39] = Eclipse Status
+                        # parts[40] = Emission Angle
+                        # parts[41] = Sun Angle w.r.t -ve Yaw (Phase angle)
+                        # parts[42] = Angle between +Yaw and Nadir
+                        # parts[43] = Slant Range (Km)
+                        # parts[44] = Orbit No
+                        # parts[45] = Solar Zenith Angle
+                        # parts[46] = Angle between Payload FoV axis and velocity vector
+                        # parts[47] = X (yaw) angle
+                        # parts[48] = Y (roll) angle
+                        # parts[49] = Z (pitch) angle
 
-                    # Attitude Quaternions (4F14.10, 3 sets)
-                    # Q1, Q2, Q3, Q4 for Inertial to Body
-                    record['sc_attitude_q_inertial_to_body'] = np.array(
-                        [float(parts[19]), float(parts[20]), float(parts[21]), float(parts[22])])
-                    # Q1, Q2, Q3, Q4 for Earth Fixed IAU frame
-                    record['q_earth_fixed_iau'] = np.array(
-                        [float(parts[23]), float(parts[24]), float(parts[25]), float(parts[26])])
-                    # Q1, Q2, Q3, Q4 for Lunar Fixed IAU frame
-                    record['q_lunar_fixed_iau'] = np.array(
-                        [float(parts[27]), float(parts[28]), float(parts[29]), float(parts[30])])
+                        record['lunar_pos_xyz_j2000_earth_kms'] = np.array(
+                            [float(parts[10]), float(parts[11]), float(parts[12])])
+                        record['satellite_pos_xyz_j2000_kms'] = np.array(
+                            [float(parts[13]), float(parts[14]), float(parts[15])])
+                        record['satellite_vel_xyz_kms_sec'] = np.array(
+                            [float(parts[16]), float(parts[17]), float(parts[18])])
 
-                    # Angles and other data
-                    record['sub_satellite_lat_deg'] = float(parts[31])
-                    record['sub_satellite_lon_deg'] = float(parts[32])
-                    record['solar_azimuth_deg'] = float(parts[33])
-                    record['solar_elevation_deg'] = float(parts[34])
-                    record['latitude_deg'] = float(
-                        parts[35])  # This might be the pixel's lat/lon, or center of image. Clarify.
-                    record['longitude_deg'] = float(parts[36])
-                    record['satellite_altitude_kms'] = float(parts[37])
-                    record['roll_vel_angle_deg'] = float(parts[38])
-                    record['eclipse_status'] = int(parts[39])
-                    record['emission_angle_deg'] = float(parts[40])
-                    record['sun_angle_neg_yaw_phase_deg'] = float(parts[41])
-                    record['yaw_nadir_angle_deg'] = float(parts[42])
-                    record['slant_range_km'] = float(parts[43])
-                    record['orbit_no'] = int(parts[44])
-                    record['solar_zenith_angle_deg'] = float(parts[45])
-                    record['fov_vel_angle_deg'] = float(parts[46])
-                    record['x_yaw_angle_deg'] = float(parts[47])  # These are likely Euler angles (Yaw, Roll, Pitch)
-                    record['y_roll_angle_deg'] = float(parts[48])
-                    record['z_pitch_angle_deg'] = float(parts[49])
+                        record['sc_attitude_q_inertial_to_body'] = np.array(
+                            [float(parts[19]), float(parts[20]), float(parts[21]), float(parts[22])])
+                        record['q_earth_fixed_iau'] = np.array(
+                            [float(parts[23]), float(parts[24]), float(parts[25]), float(parts[26])])
+                        record['q_lunar_fixed_iau'] = np.array(
+                            [float(parts[27]), float(parts[28]), float(parts[29]), float(parts[30])])
 
-                    data_records.append(record)
-                except (ValueError, IndexError) as e:
-                    print(f"Skipping malformed OAT line: {line.strip()} (Error: {e})")
-    print(f"Parsed {len(data_records)} records from OAT file.")
-    return data_records
+                        record['sub_satellite_lat_deg'] = float(parts[31])
+                        record['sub_satellite_lon_deg'] = float(parts[32])
+                        record['solar_azimuth_deg'] = float(parts[33])
+                        record['solar_elevation_deg'] = float(parts[34])
+                        record['latitude_deg'] = float(parts[35])
+                        record['longitude_deg'] = float(parts[36])
+                        record['satellite_altitude_kms'] = float(parts[37])
+                        record['roll_vel_angle_deg'] = float(parts[38])
+                        record['eclipse_status'] = int(parts[39])
+                        record['emission_angle_deg'] = float(parts[40])
+                        record['sun_angle_neg_yaw_phase_deg'] = float(parts[41])
+                        record['yaw_nadir_angle_deg'] = float(parts[42])
+                        record['slant_range_km'] = float(parts[43])
+                        record['orbit_no'] = int(parts[44])
+                        record['solar_zenith_angle_deg'] = float(parts[45])
+                        record['fov_vel_angle_deg'] = float(parts[46])
+                        record['x_yaw_angle_deg'] = float(parts[47])
+                        record['y_roll_angle_deg'] = float(parts[48])
+                        record['z_pitch_angle_deg'] = float(parts[49])
+
+                        data_records.append(record)
+                    except (ValueError, IndexError) as e:
+                        print(f"Skipping malformed OAT line: {line.strip()} (Error: {e})")
+        print(f"Parsed {len(data_records)} records from OAT file.")
+        return data_records
+    except FileNotFoundError:
+        print(f"Error: OAT file not found at {filepath}")
+        return []
+    except Exception as e:
+        print(f"Error parsing OAT file {filepath}: {e}")
+        return []
 
 
 def parse_spm_file(filepath):
     """Parses the SPM (Sun Parameter) file."""
     data_records = []
-    with open(filepath, 'r') as f:
-        for line in f:
-            if line.startswith('ORBTATTD'):
-                parts = line.split()
-                try:
-                    record = {}
-                    record['record_type'] = parts[0]
-                    record['physical_record_num'] = int(parts[1])
-                    record['block_length_bytes'] = int(parts[2])
+    try:
+        with open(filepath, 'r') as f:
+            for line in f:
+                if line.startswith('ORBTATTD'):
+                    parts = line.split()
+                    try:
+                        record = {}
+                        record['record_type'] = parts[0]
+                        record['physical_record_num'] = int(parts[1])
+                        record['block_length_bytes'] = int(parts[2])
 
-                    record['utc_time'] = parse_utc_time(parts, 3)
+                        record['utc_time'] = parse_utc_time(parts, 3)
 
-                    record['satellite_pos_x_kms'] = float(parts[10])  # Satellite position X (kms) - Note-3
-                    record['satellite_pos_y_kms'] = float(parts[11])
-                    record['satellite_pos_z_kms'] = float(parts[12])
-                    record['satellite_vel_x_kms_sec'] = float(parts[13])  # Satellite velocity X-dot (kms/sec) - Note-3
-                    record['satellite_vel_y_kms_sec'] = float(parts[14])
-                    record['satellite_vel_z_kms_sec'] = float(parts[15])
+                        # Adjusted indices for SPM based on the provided format:
+                        # Satellite position X, Y, Z (F20.6) - parts[10] to [12]
+                        # Satellite velocity X, Y, Z (F12.6) - parts[13] to [15]
+                        record['satellite_pos_x_kms'] = float(parts[10])
+                        record['satellite_pos_y_kms'] = float(parts[11])
+                        record['satellite_pos_z_kms'] = float(parts[12])
+                        record['satellite_vel_x_kms_sec'] = float(parts[13])
+                        record['satellite_vel_y_kms_sec'] = float(parts[14])
+                        record['satellite_vel_z_kms_sec'] = float(parts[15])
 
-                    record['phase_angle_deg'] = float(parts[16])
-                    record['sun_aspect_deg'] = float(parts[17])
-                    record['sun_azimuth_deg'] = float(parts[18])
-                    record['sun_elevation_deg'] = float(parts[19])
-                    record['orbit_limb_direction'] = int(parts[20])
+                        record['phase_angle_deg'] = float(parts[16])
+                        record['sun_aspect_deg'] = float(parts[17])
+                        record['sun_azimuth_deg'] = float(parts[18])
+                        record['sun_elevation_deg'] = float(parts[19])
+                        record['orbit_limb_direction'] = int(parts[20])
 
-                    data_records.append(record)
-                except (ValueError, IndexError) as e:
-                    print(f"Skipping malformed SPM line: {line.strip()} (Error: {e})")
-    print(f"Parsed {len(data_records)} records from SPM file.")
-    return data_records
+                        data_records.append(record)
+                    except (ValueError, IndexError) as e:
+                        print(f"Skipping malformed SPM line: {line.strip()} (Error: {e})")
+        print(f"Parsed {len(data_records)} records from SPM file.")
+        return data_records
+    except FileNotFoundError:
+        print(f"Error: SPM file not found at {filepath}")
+        return []
+    except Exception as e:
+        print(f"Error parsing SPM file {filepath}: {e}")
+        return []
 
 
 # --- 4. Camera Intrinsic Parameters (PLACEHOLDERS - YOU MUST REPLACE) ---
@@ -205,7 +265,7 @@ oat_data = parse_oat_file(OAT_PATH)
 spm_data = parse_spm_file(SPM_PATH)
 
 if not oat_data or not spm_data:
-    print("Error: Could not parse enough data from OAT or SPM files.")
+    print("Error: Could not parse enough data from OAT or SPM files. Exiting.")
     exit()
 
 # For demonstration, use the first record (closest in time, assuming image taken around then)
@@ -222,130 +282,7 @@ print(f"Using SPM record from: {relevant_spm_record['utc_time']}")
 solar_incidence_angle_deg = 90.0 - relevant_spm_record['sun_elevation_deg']
 print(f"Solar Incidence Angle: {solar_incidence_angle_deg:.2f} degrees")
 
-# The OAT file provides 'Solar Azimuth' and 'Solar Elevation' directly.
-# These are likely given in a local horizontal frame at the sub-satellite point.
-# To convert them to a 3D vector in the camera frame, we need transformations.
-
-# For Photoclinometry, we need the **Sun Vector** (direction of light) and **Viewing Vector** (direction of camera).
-# These should be in the **camera's own coordinate frame** or a local tangent plane at the surface.
-
-# **A) Sun Vector (L):**
-# The `oat` file has `Solar Azimuth` and `Solar Elevation` relative to the local horizon.
-# Let's assume the camera is pointing straight down (nadir) and this is the frame.
-# This is a critical assumption: Azimuth usually measured from North, Elevation from horizon.
-# If we convert these to Cartesian coordinates, we get the Sun vector in a local horizontal frame.
-# Then, we need to rotate this into the camera's body frame using the spacecraft's attitude.
-
-# From SPM file, 'Sun Azimuth' and 'Sun Elevation' are provided.
-# Let's assume Sun Azimuth is from North (0 deg) to East (+90 deg) and Elevation is from horizon.
-# Conversion from Azimuth/Elevation to Cartesian (local tangent plane for SfS):
-# X_local = cos(Elev) * sin(Az)  (East)
-# Y_local = cos(Elev) * cos(Az)  (North)
-# Z_local = sin(Elev)            (Up)
-
-# However, the OAT file also provides `S/C Attitude - Inertial to Body Q1, Q2, Q3, Q4`.
-# This quaternion (Q1, Q2, Q3, Q4) transforms a vector from the **Inertial J2000 frame** to the **Spacecraft Body frame**.
-# We need to compute the Sun's position in J2000, then transform it.
-
-# Let's use the Solar Azimuth and Elevation from OAT/SPM as our starting point.
-# This simplifies the problem significantly if these angles are defined relative to the camera's view.
-
-# We need the Sun vector in the camera frame.
-# If Solar Azimuth/Elevation are given w.r.t the local surface normal (nadir-pointing camera):
-# Let's define the local frame as: X_local = East, Y_local = North, Z_local = Up (local normal)
-# sun_az_rad = np.deg2rad(relevant_oat_record['solar_azimuth_deg'])
-# sun_el_rad = np.deg2rad(relevant_oat_record['solar_elevation_deg'])
-
-# Sun vector in Local Horizontal Frame (LHF, Z-up, X-East, Y-North)
-# sun_vector_lhf = np.array([
-#     np.cos(sun_el_rad) * np.sin(sun_az_rad),
-#     np.cos(sun_el_rad) * np.cos(sun_az_rad),
-#     np.sin(sun_el_rad)
-# ])
-
-# Now, we need to rotate this LHF vector into the camera frame.
-# This requires knowing the camera's orientation relative to the LHF or spacecraft body frame.
-# The OAT file gives `S/C Attitude - Inertial to Body Q`.
-# It also gives `Transformation Quaternion for Lunar Fixed IAU frame Q`.
-# This allows us to convert between J2000, Spacecraft Body, and Lunar Fixed frames.
-
-# **Simplified Approach for Sun and View Vectors (Assuming Camera Nadir-Pointing):**
-# For a camera looking straight down (nadir), the local surface normal is [0, 0, 1] in its own frame (Z-axis pointing outwards from camera lens).
-# The Sun Elevation angle (from OAT/SPM) is typically w.r.t. the local horizontal.
-# So, if Z is pointing out of the camera (towards the Moon), then elevation 0 is horizontal, 90 is directly above.
-# A sun vector in the camera's frame can be derived from Solar Azimuth and Solar Elevation.
-
-# Let's define a camera frame where:
-# +X is to the right of the image
-# +Y is downwards in the image
-# +Z is out of the camera lens, towards the lunar surface.
-
-# If the Sun Elevation is relative to the local horizontal, and the camera is nadir-pointing:
-# Elevation (alpha) from OAT/SPM, Azimuth (beta) from OAT/SPM.
-# Convert to radians.
-sun_azimuth_rad = np.deg2rad(relevant_spm_record['sun_azimuth_deg'])
-sun_elevation_rad = np.deg2rad(relevant_spm_record['sun_elevation_deg'])
-
-# Sun vector (L) in the camera's local coordinate system:
-# L_x = cos(elevation) * sin(azimuth)  (component along X-axis, typically East/Right)
-# L_y = cos(elevation) * cos(azimuth)  (component along Y-axis, typically North/Down)
-# L_z = -sin(elevation)               (component along Z-axis, pointing into the surface if Z is camera-out)
-# Adjust signs based on your specific camera frame definition.
-# If Sun_Elevation is measured from the horizon upwards (90 degrees = straight up),
-# and the camera Z-axis points into the moon, then:
-# Lx = cos(sun_elevation_rad) * sin(sun_azimuth_rad)
-# Ly = cos(sun_elevation_rad) * cos(sun_azimuth_rad)
-# Lz = -sin(sun_elevation_rad) # Negative because sun is "above" the surface, camera Z is "into" surface
-
-# Based on typical photogrammetry:
-# Sun vector, L = [cos(phi)sin(theta), cos(phi)cos(theta), sin(phi)]
-# where phi = Sun Elevation, theta = Sun Azimuth.
-# We need to be careful with the coordinate system.
-# Let's assume a simplified camera frame (x-right, y-down, z-into scene).
-# And the solar azimuth/elevation are relative to the scene.
-
-# If Sun Azimuth is 0 at North, and increases clockwise (East is 90).
-# If Sun Elevation is 0 at horizon, 90 at zenith.
-
-# To get the vector pointing from the surface *to the sun*:
-# Azimuth from North (Y-axis), Elevation from Horizon (XY plane).
-# sun_vector_local = np.array([
-#     np.cos(sun_elevation_rad) * np.sin(sun_azimuth_rad),  # X-component (East)
-#     np.cos(sun_elevation_rad) * np.cos(sun_azimuth_rad),  # Y-component (North)
-#     np.sin(sun_elevation_rad)                             # Z-component (Up)
-# ])
-
-# Now, we need this in the camera frame. If camera is nadir looking, then:
-# Camera X = local X (East)
-# Camera Y = local -Y (South) or local +Y (North)? depends on image orientation
-# Camera Z = local -Z (Down, into surface)
-# This mapping needs to be accurate for your camera's actual orientation.
-
-# Let's use the provided `Solar Azimuth` and `Solar Elevation` from SPM directly.
-# And assume a convention where these angles directly define the sun vector relative to the camera's view.
-# Assuming Azimuth is angle in XY plane, Elevation is angle wrt XY plane.
-# And Z is normal to the surface, pointing "outwards" towards the camera.
-
-# A more robust way to get Sun and View vectors in the Camera Frame:
-# 1. Get Sun position in J2000 (from ephemeris, if you had it, or from SPM's satellite_pos if Moon-centered).
-# 2. Get Spacecraft position in J2000 (from OAT).
-# 3. Calculate Sun-to-SC vector in J2000.
-# 4. Use OAT's `sc_attitude_q_inertial_to_body` quaternion to rotate this vector into the Spacecraft Body frame.
-# 5. Then, use the camera's mounting matrix (from its IK, not provided) to get into the Camera frame.
-
-# Given the direct `Solar Azimuth` and `Solar Elevation` in OAT/SPM, it's highly probable
-# these are already relative to a local "up" direction at the sub-satellite point.
-# We'll use these to define the sun vector in a local coordinate system.
-
-# Let's assume a local Cartesian coordinate system for the surface patch, centered at the sub-satellite point:
-# +X along image columns (e.g., East)
-# +Y along image rows (e.g., South)
-# +Z perpendicular to surface, pointing upwards (away from Moon's center)
-
-# The Solar Azimuth (from SPM) is likely measured from North clockwise.
-# The Solar Elevation (from SPM) is from the horizontal plane upwards.
-
-# To convert to a vector in a (X=East, Y=North, Z=Up) local frame:
+# Sun Azimuth and Elevation from SPM
 sun_azimuth_rad = np.deg2rad(relevant_spm_record['sun_azimuth_deg'])
 sun_elevation_rad = np.deg2rad(relevant_spm_record['sun_elevation_deg'])
 
@@ -364,7 +301,6 @@ sun_vector_local_terrain = sun_vector_local_terrain / np.linalg.norm(sun_vector_
 # In the local terrain frame (X-East, Y-North, Z-Up), the camera is "above" the surface.
 # So, the viewing vector from the surface *to the camera* would be [0, 0, 1] (straight up).
 # The viewing vector (V) from the *camera to the surface* is then [0, 0, -1].
-
 view_vector_local_terrain = np.array([0, 0, -1])  # Camera looking straight down
 
 print(f"Sun Vector (Local Terrain Frame): {sun_vector_local_terrain}")
@@ -373,18 +309,9 @@ print(f"View Vector (Local Terrain Frame): {view_vector_local_terrain}")
 
 # --- 7. Photoclinometry (Shape-from-Shading) Core Logic ---
 
-# We will use the Lommel-Seeliger reflectance model for the Moon, which is more appropriate
-# than Lambertian.
-# I = (L / (pi * (1 + (L.N) * (V.N) / (L.V)))) * (L.N)
-# Where I is observed intensity, L is light vector, V is viewing vector, N is surface normal.
-# This formula is often simplified or used with empirical models.
-
-# The equation for SfS with Lommel-Seeliger is complex. It's often solved iteratively.
-# Given I(x,y) and known L, V, we want to find N(x,y) (surface normals), then integrate to get Z(x,y) (depth).
-
 def lommel_seeliger_intensity(normal, L, V, albedo=0.1):
     """
-    Calculates expected intensity for a given normal using Lommel-Seeliger model.
+    Calculates expected intensity for a given normal using a simplified Lommel-Seeliger model.
     normal, L, V are unit vectors. albedo is typically ~0.1 for lunar regolith.
     """
 
@@ -401,22 +328,11 @@ def lommel_seeliger_intensity(normal, L, V, albedo=0.1):
     cos_e = -np.dot(V, normal)
 
     # Check for valid angles (light hitting surface, camera seeing surface)
-    if cos_i < 0 or cos_e < 0:  # Light not hitting, or back-facing surface
-        return 0.0  # Shadow or not visible
+    # If cos_i < 0, it's in shadow. If cos_e < 0, it's a back-facing slope for the camera.
+    if cos_i < 0 or cos_e < 0:
+        return 0.0
 
-    # Factor for Lommel-Seeliger
-    # cos_phi is L.V (cosine of phase angle)
-    # The form provided in papers can vary slightly.
-    # Common form: I = A * (cos(i) / (1 + cos(i)/cos(e)))
-
-    # A more common simplification for lunar photometric function is:
-    # I = k * (cos(i) / (cos(i) + cos(e)))
-    # Where 'k' is a constant or related to albedo.
-    # Let's use this simplified form for demonstration.
-
-    # albedo / ( (L.N) + (V.N) ) * (L.N)
-
-    # If L.N or V.N are zero (glancing angle), avoid division by zero
+        # Simplified Lommel-Seeliger form
     if (cos_i + cos_e) == 0:
         return 0.0
 
@@ -424,51 +340,43 @@ def lommel_seeliger_intensity(normal, L, V, albedo=0.1):
     return intensity
 
 
-# Function to numerically integrate gradients to reconstruct depth
+# The `reconstruct_depth_from_normals` function is a very basic, path-dependent integration.
+# For real SfS, Horn's algorithm or Poisson solvers (e.g., from `scikit-image`) are used for better results.
+# I'll keep this function for conceptual completeness, but note its limitations.
 def reconstruct_depth_from_normals(normals_map, boundary_value=0.0):
     """
     Integrates a field of surface normals (dz/dx, dz/dy) to reconstruct a depth map.
-    This is a simplified integration. For real SfS, Horn's algorithm or Poisson solvers are used.
+    This is a simplified integration and prone to drift.
     """
     rows, cols, _ = normals_map.shape
     depth_map = np.zeros((rows, cols), dtype=np.float32)
 
-    # From normal N = [-dz/dx, -dz/dy, 1] (assuming Z is height)
-    # We get dz/dx = -Nx/Nz and dz/dy = -Ny/Nz
+    depth_map[0, 0] = boundary_value  # Set a boundary condition
 
-    # Iterate and integrate (this is a very basic path-dependent integration)
-    # Real implementations use global optimization methods to minimize path dependency.
-
-    # Set a boundary condition (e.g., depth at top-left corner)
-    depth_map[0, 0] = boundary_value
-
+    # This is a very basic, path-dependent integration. Not ideal for real applications.
+    # A Poisson solver (e.g., from scikit-image.restoration) would be much better.
     for r in range(rows):
         for c in range(cols):
             if r == 0 and c == 0:
-                continue  # Already set
+                continue
 
             nx, ny, nz = normals_map[r, c]
 
-            # Avoid division by zero or very small Nz (vertical surface)
-            if nz < 1e-6:  # Prevent division by zero for vertical normals
+            if nz < 1e-6:  # Prevent division by zero for nearly vertical normals
                 dz_dx = 0.0
                 dz_dy = 0.0
             else:
                 dz_dx = -nx / nz
                 dz_dy = -ny / nz
 
-            # Simple integration (prone to drift/error)
-            if r > 0:
-                depth_map[r, c] += depth_map[r - 1, c] + dz_dy  # (approx)
-            if c > 0:
-                depth_map[r, c] += depth_map[r, c - 1] + dz_dx  # (approx)
-
-            # Average if both paths are available (simple averaging)
+            # Simple average of two paths (horizontal and vertical)
             if r > 0 and c > 0:
                 depth_map[r, c] = ((depth_map[r - 1, c] + dz_dy) + (depth_map[r, c - 1] + dz_dx)) / 2.0
+            elif r > 0:
+                depth_map[r, c] = depth_map[r - 1, c] + dz_dy
+            elif c > 0:
+                depth_map[r, c] = depth_map[r, c - 1] + dz_dx
 
-    # For better results, consider `scipy.ndimage.gaussian_laplace` or actual Poisson solvers
-    # or Horn's algorithm which is iterative.
     return depth_map
 
 
@@ -480,15 +388,14 @@ def photoclinometry_iterative_sfs(image_intensity, L, V, initial_dem, iterations
     dem = initial_dem.copy()
     rows, cols = image_intensity.shape
 
-    # Simple albedo guess for Moon
-    albedo = 0.1  # This can vary, but 0.1 is a reasonable average for lunar regolith
+    albedo = 0.1  # Simple albedo guess for Moon
 
     print(f"Starting {iterations} iterations of conceptual SfS...")
 
     for i in range(iterations):
         # 1. Compute current surface normals (N) from the DEM
-        # Gradients in X and Y (dz/dx, dz/dy)
-        dz_dy, dz_dx = gradient(dem, axis=(0, 1))  # dz_dy corresponds to image rows, dz_dx to columns
+        # Use numpy.gradient to compute gradients. It returns (gradient_y, gradient_x)
+        dz_dy, dz_dx = np.gradient(dem)
 
         # Normals N = [-dz/dx, -dz/dy, 1] / sqrt( (dz/dx)^2 + (dz/dy)^2 + 1 )
         # Ensure normals are unit vectors. Z component points 'up' (away from Moon).
@@ -496,12 +403,6 @@ def photoclinometry_iterative_sfs(image_intensity, L, V, initial_dem, iterations
         # Create a map of normals
         normals_map = np.zeros((rows, cols, 3), dtype=np.float32)
         magnitude = np.sqrt(dz_dx ** 2 + dz_dy ** 2 + 1.0)
-
-        # N_x = -dz/dx / mag
-        # N_y = -dz/dy / mag
-        # N_z = 1 / mag
-        # This assumes Z is positive upwards. If Z is depth into the scene, signs might flip.
-        # Let's keep Z pointing away from the Moon's center (up).
 
         normals_map[:, :, 0] = -dz_dx / magnitude  # -dz/dx component (along X)
         normals_map[:, :, 1] = -dz_dy / magnitude  # -dz/dy component (along Y)
@@ -515,9 +416,8 @@ def photoclinometry_iterative_sfs(image_intensity, L, V, initial_dem, iterations
                 I_predicted[r, c] = lommel_seeliger_intensity(N_pixel, L, V, albedo=albedo)
 
         # Scale predicted intensity to match original range (for visualization/comparison)
-        # Avoid division by zero if I_predicted is all zeros
         if I_predicted.max() > I_predicted.min():
-            I_predicted_scaled = (I_predicted - I_predicted.min()) / (I_predicted.max() - I_predicted.min())
+            I_predicted_scaled = (I_predicted - I_predicted.min()) / (I_predicted.max() - I_predicted.min() + 1e-9)
         else:
             I_predicted_scaled = np.zeros_like(I_predicted)
 
@@ -525,16 +425,7 @@ def photoclinometry_iterative_sfs(image_intensity, L, V, initial_dem, iterations
         error = image_intensity - I_predicted_scaled
 
         # 4. Update DEM based on error (gradient descent type update)
-        # This is a very simplistic update rule. Real SfS uses more sophisticated optimization.
-        # If expected intensity is too low (image is brighter than predicted),
-        # it means the normal should point more towards the light.
-        # A common approach is to update dz/dx and dz/dy.
-
-        # This simple update tries to nudge the DEM towards areas where predicted intensity matches actual.
-        # For a more physically-based update, you'd use the Jacobian of the reflectance model.
-
-        # Simple update proportional to error:
-        dem += learning_rate * error  # Nudge DEM up/down based on brightness difference
+        dem += learning_rate * error
 
         # Optional: Apply smoothing to the DEM to prevent noise amplification
         dem = gaussian_filter(dem, sigma=0.5)
