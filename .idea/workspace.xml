@@ -4,8 +4,8 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="1c460619-1860-4f87-8fba-75ec60b0055c" name="Changes" comment="USING GPU">
-      <change afterPath="$PROJECT_DIR$/main_p01.py" afterDir="false" />
+    <list default="true" id="1c460619-1860-4f87-8fba-75ec60b0055c" name="Changes" comment="Using oat/oath/lbr">
+      <change afterPath="$PROJECT_DIR$/data/readme.txt" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/main.py" beforeDir="false" afterPath="$PROJECT_DIR$/main.py" afterDir="false" />
     </list>
@@ -33,15 +33,16 @@
     <option name="hideEmptyMiddlePackages" value="true" />
     <option name="showLibraryContents" value="true" />
   </component>
-  <component name="PropertiesComponent">{
-  &quot;keyToString&quot;: {
-    &quot;Python.avg.executor&quot;: &quot;Run&quot;,
-    &quot;Python.main.executor&quot;: &quot;Run&quot;,
-    &quot;Python.main2.executor&quot;: &quot;Run&quot;,
-    &quot;RunOnceActivity.ShowReadmeOnStart&quot;: &quot;true&quot;,
-    &quot;last_opened_file_path&quot;: &quot;D:/Aadit/ML/ISRO-LunarDEM&quot;
+  <component name="PropertiesComponent"><![CDATA[{
+  "keyToString": {
+    "Python.avg.executor": "Run",
+    "Python.main.executor": "Run",
+    "Python.main2.executor": "Run",
+    "Python.repeat.executor": "Run",
+    "RunOnceActivity.ShowReadmeOnStart": "true",
+    "last_opened_file_path": "D:/Aadit/ML/ISRO-LunarDEM"
   }
-}</component>
+}]]></component>
   <component name="RecentsManager">
     <key name="CopyFile.RECENT_KEYS">
       <recent name="D:\Aadit\ML\ISRO-LunarDEM" />
@@ -131,7 +132,23 @@
       <option name="project" value="LOCAL" />
       <updated>1751111139419</updated>
     </task>
-    <option name="localTasksCounter" value="9" />
+    <task id="LOCAL-00009" summary="Using oat/oath/lbr">
+      <option name="closed" value="true" />
+      <created>1751280108349</created>
+      <option name="number" value="00009" />
+      <option name="presentableId" value="LOCAL-00009" />
+      <option name="project" value="LOCAL" />
+      <updated>1751280108349</updated>
+    </task>
+    <task id="LOCAL-00010" summary="Using oat/oath/lbr">
+      <option name="closed" value="true" />
+      <created>1751280223586</created>
+      <option name="number" value="00010" />
+      <option name="presentableId" value="LOCAL-00010" />
+      <option name="project" value="LOCAL" />
+      <updated>1751280223586</updated>
+    </task>
+    <option name="localTasksCounter" value="11" />
     <servers />
   </component>
   <component name="VcsManagerConfiguration">
@@ -140,6 +157,7 @@
     <MESSAGE value="balanced dem" />
     <MESSAGE value="advanced imagery" />
     <MESSAGE value="USING GPU" />
-    <option name="LAST_COMMIT_MESSAGE" value="USING GPU" />
+    <MESSAGE value="Using oat/oath/lbr" />
+    <option name="LAST_COMMIT_MESSAGE" value="Using oat/oath/lbr" />
   </component>
 </project>
