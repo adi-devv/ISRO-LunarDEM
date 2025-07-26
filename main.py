@@ -9,8 +9,7 @@ import os
 DATA_DIR = 'data/'   
 IMAGE_PATH = os.path.join(DATA_DIR, 'moonframe.png')
 
-# Corrected paths based on your latest input, ensuring they are in 'data/'
-OATH_PATH = os.path.join(DATA_DIR, 'params.oath')
+ OATH_PATH = os.path.join(DATA_DIR, 'params.oath')
 OAT_PATH = os.path.join(DATA_DIR, 'params.oat')
 LBR_PATH = os.path.join(DATA_DIR, 'params.lbr')
 SPM_PATH = os.path.join(DATA_DIR, 'sun_params.spm')
