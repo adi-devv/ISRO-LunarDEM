@@ -17,8 +17,7 @@ SPM_PATH = os.path.join(DATA_DIR, 'sun_params.spm')
 OUTPUT_DEM_PNG = 'generated_lunar_dem_absolute_conceptual.png'
 OUTPUT_DEM_NPY = 'generated_lunar_dem_absolute_conceptual.npy'
 
-# SfS Parameters
-NUM_SFS_ITERATIONS = 100
+ NUM_SFS_ITERATIONS = 100
 CONVERGENCE_THRESHOLD = 1e-4  # For SfS stopping condition (if error change is very small)
 SFS_LEARNING_RATE = 100.0  # Adjusted based on your provided code for better initial convergence
 
