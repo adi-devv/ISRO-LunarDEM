@@ -5,8 +5,7 @@ from datetime import datetime, timedelta
 from scipy.ndimage import gaussian_filter
 import os
 
-# --- 1. Configuration and File Paths ---
-DATA_DIR = 'data/'   
+ DATA_DIR = 'data/'   
 IMAGE_PATH = os.path.join(DATA_DIR, 'moonframe.png')
 
  OATH_PATH = os.path.join(DATA_DIR, 'params.oath')
