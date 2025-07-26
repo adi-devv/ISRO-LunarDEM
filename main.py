@@ -13,8 +13,7 @@ OAT_PATH = os.path.join(DATA_DIR, 'params.oat')
 LBR_PATH = os.path.join(DATA_DIR, 'params.lbr')
 SPM_PATH = os.path.join(DATA_DIR, 'sun_params.spm')
 
-# Output file paths
-OUTPUT_DEM_PNG = 'generated_lunar_dem_absolute_conceptual.png'
+ OUTPUT_DEM_PNG = 'generated_lunar_dem_absolute_conceptual.png'
 OUTPUT_DEM_NPY = 'generated_lunar_dem_absolute_conceptual.npy'
 
  NUM_SFS_ITERATIONS = 100
